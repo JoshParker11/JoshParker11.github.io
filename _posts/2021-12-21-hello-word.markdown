@@ -38,29 +38,45 @@ I'll list a few of the systems I plan to work on in each stage, this list is not
 ## Stage 0 [Core Engine]
 
 * Project Setup  
+* Platform Layer
+    - Data Types
+    - Data Structures
+    - File System
+    - Networking 
+    - Threading
+* Subsystem Management
+* Math Library
+* Strings and Hashed String Ids
+* Parsing
+* Engine Configuration
+* Async File I/O
 * Basic Game Loop
 * Logging
 * Event Handling
 * Input Handling
 * Memory Management
+* Resource Management
 * Unit Testing
 * Layers
 * Entity Component Systems
 * Windowing
-* Graphics
+* Graphics (This is the largest single system)
 * Physics
 * Audio
 * Threading
 * Reflection
+* Scene Graph / Culling
 * Networking
 * Profiling
 * Scripting
+* Animation (Will probably put this off for quite a while)
+* UI (Also delaying this)
 
 ## Stage 1 [Development Tools]
 
 * Scene Editor
 * Terrain Editor
-* Asset Management
+* Asset Converters
 * Scripting
 
 ## Stage 2 [Make A Game]
@@ -68,6 +84,11 @@ I'll list a few of the systems I plan to work on in each stage, this list is not
 * Concept
 * Prototyping
 * White boxing
+* Game Specific Rendering
+* Game Specific Subsystems
+* Player Mechanics
+* Game Camera
+* AI
 * Creating Assets
 * Playtesting
 * Shipping
