@@ -152,7 +152,7 @@ PAUSE
 
 If you run this now, a new solution should open up in vs2019, mine looks like:
 
-![Solution Launched]({{site.baseurl}}/assets/img/premake_setup/solution_launched.png) 
+![Solution Launched](/assets/img/solution_launched.png) 
 
 The .cpp and .h files are empty and just for the purposes of showing how the script collects files in the respective /src/ directories.
 
