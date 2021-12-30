@@ -13,17 +13,17 @@ I was originally going to use **Sharpmake** as the build system for the project,
 Follow this link: https://github.com/premake/premake-core/releases
 
 Click the version you want to download, I'm using **Premake 5.0-beta1**
-![Premake Download](/assets/img/premake_setup/exe_download.png)
+![Premake Download]({{site.baseurl}}/assets/img/premake_setup/exe_download.png)
 
 This will download a zip file containing the executable we need. 
-![Exe Unzip](/assets/img/premake_setup/exe_archive.png)
+![Exe Unzip]({{site.baseurl}}/assets/img/premake_setup/exe_archive.png)
 
 **Make sure to grab the LICENSE as well to give proper credit**
 
 License currently at: https://github.com/premake/premake-core/blob/master/LICENSE.txt
 
 Press the Raw button and save the file as LICENSE.txt
-![LICENSE Download](/assets/img/premake_setup/license.png)
+![LICENSE Download]({{site.baseurl}}/assets/img/premake_setup/license.png)
 
 
 
@@ -32,7 +32,7 @@ I have a specific way that I like to set up project, so I will explain using the
 
 Basic structure for the project:
 
-![Project Structure](/assets/img/premake_setup/proj_tree.png)
+![Project Structure]({{site.baseurl}}/assets/img/premake_setup/proj_tree.png)
 
 I've moved the un-zipped premake5.exe under a directory called Vendor/bin/premake/ along with the LICENSE.txt
 
@@ -90,7 +90,7 @@ project "Engine"
 A couple of things to note; Since this is written in **lua** you can declare variables and use them like you would any other script, for us this is currently *outputdir* since we will use this format in multiple places it's nice to pull that out into a variable for easy manipulation later and less code duplication. I've also set up the core Engine project as a "StaticLib", this means it will be built as a .lib which is the current architecture I have planned for the project. The core engine libraries will be statically linked to the game/editor projects, this may change in the future but for now is what I'm going with.
 
 By running: 
-![Run Manual](/assets/img/premake_setup/run_premake_manual.png) 
+![Run Manual]({{site.baseurl}}/assets/img/premake_setup/run_premake_manual.png) 
 *or the path to whatever directory you have premake5.exe and whatever version of vs you're building for*
 
 You should be able to see two new generated files, **Engine.sln** in the same directory as the script file, and **Engine/Engine.vcxproj**
@@ -152,7 +152,7 @@ PAUSE
 
 If you run this now, a new solution should open up in vs2019, mine looks like:
 
-![Solution Launched](/assets/img/premake_setup/solution_launched.png) 
+![Solution Launched]({{site.baseurl}}/assets/img/premake_setup/solution_launched.png) 
 
 The .cpp and .h files are empty and just for the purposes of showing how the script collects files in the respective /src/ directories.
 
