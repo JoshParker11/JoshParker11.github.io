@@ -10,20 +10,20 @@ tags: [Game Engine, Programming] # add tag
 I was originally going to use **Sharpmake** as the build system for the project, it is very powerful, fast, and easy for anyone who is familiar with programming since the configuration is done in C#. However, I'm currently running into issues with the most recent distribution and I didn't want to spend any more time debugging instead of working on the project. If the scope of the build system starts getting out of hand I'll switch over and work through the issues, but for the sake of getting up and running ASAP we're going to use **premake5** for the time being, a more than capable build configuration manager, and my preferred system outside **Sharpmake**. 
 
 ## Downloading Premake Binaries and License
-Follow this link: https://github.com/premake/premake-core/releases
+Follow this link: [Premake Releases](https://github.com/premake/premake-core/releases){:target="_blank"}
 
 Click the version you want to download, I'm using **Premake 5.0-beta1**
-![Premake Download](/assets/img/premake_setup/exe_download.png)
+![Premake Download](/assets/img/exe_download.png)
 
 This will download a zip file containing the executable we need. 
-![Exe Unzip](/assets/img/premake_setup/exe_archive.png)
+![Exe Unzip](/assets/img/exe_archive.png)
 
 **Make sure to grab the LICENSE as well to give proper credit**
 
-License currently at: https://github.com/premake/premake-core/blob/master/LICENSE.txt
+License currently at: [Premake LICENSE](https://github.com/premake/premake-core/blob/master/LICENSE.txt){:target="_blank"}
 
 Press the Raw button and save the file as LICENSE.txt
-![LICENSE Download](/assets/img/premake_setup/license.png)
+![LICENSE Download](/assets/img/license.png)
 
 
 
@@ -32,7 +32,7 @@ I have a specific way that I like to set up project, so I will explain using the
 
 Basic structure for the project:
 
-![Project Structure](/assets/img/premake_setup/proj_tree.png)
+![Project Structure](/assets/img/proj_tree.png)
 
 I've moved the un-zipped premake5.exe under a directory called Vendor/bin/premake/ along with the LICENSE.txt
 
@@ -42,7 +42,7 @@ I've also create a new file called **premake5.lua** *Premake looks for this file
 
 ## Making the Engine project
 
-You can look through the wiki on the github page or a slightly nicer version here: https://premake.github.io/docs/
+You can look through the wiki on the github page or a slightly nicer version here: [Premake Docs](https://premake.github.io/docs/){:target="_blank"}
 
 I won't be going into extreme depth as to how everything works, so feel free to pursue the docs and search for concepts that I didn't cover. I would specifically look at (https://premake.github.io/docs/Tokens/#value-tokens) to see some predefined values.
 
@@ -89,13 +89,13 @@ project "Engine"
 
 A couple of things to note; Since this is written in **lua** you can declare variables and use them like you would any other script, for us this is currently *outputdir* since we will use this format in multiple places it's nice to pull that out into a variable for easy manipulation later and less code duplication. I've also set up the core Engine project as a "StaticLib", this means it will be built as a .lib which is the current architecture I have planned for the project. The core engine libraries will be statically linked to the game/editor projects, this may change in the future but for now is what I'm going with.
 
+*Note:* I plan on using C++17 for the time being instead of C++20 mostly because there's nothing I particularly need from C++20, C++17 is already overkill for how I plan to write most of the systems. If at some point the benefits of switching become clear I will do so.
+
 By running: 
-![Run Manual](/assets/img/premake_setup/run_premake_manual.png) 
+![Run Manual](/assets/img/run_premake_manual.png) 
 *or the path to whatever directory you have premake5.exe and whatever version of vs you're building for*
 
 You should be able to see two new generated files, **Engine.sln** in the same directory as the script file, and **Engine/Engine.vcxproj**
-
-## Potential Errors and Fixes?
 
 ## Making the Testbed project
 
