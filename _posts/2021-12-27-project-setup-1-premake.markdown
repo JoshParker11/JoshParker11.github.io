@@ -10,13 +10,14 @@ tags: [Game Engine, Programming] # add tag
 I was originally going to use **Sharpmake** as the build system for the project, it is very powerful, fast, and easy for anyone who is familiar with programming since the configuration is done in C#. However, I'm currently running into issues with the most recent distribution and I didn't want to spend any more time debugging instead of working on the project. If the scope of the build system starts getting out of hand I'll switch over and work through the issues, but for the sake of getting up and running ASAP we're going to use **premake5** for the time being, a more than capable build configuration manager, and my preferred system outside **Sharpmake**. 
 
 ## Downloading Premake Binaries and License
-Follow this link: [Premake Releases](https://github.com/premake/premake-core/releases){:target="_blank"}
 
-Click the version you want to download, I'm using **Premake 5.0-beta1**
-![Premake Download](/assets/img/exe_download.png)
+Follow this link (for a direct download): [Premake Direct Download](https://premake.github.io/download){:target="_blank"} 
+
+I'm using **Premake 5.0.0-beta1-src.zip**
 
 This will download a zip file containing the executable we need. 
 ![Exe Unzip](/assets/img/exe_archive.png)
+
 
 **Make sure to grab the LICENSE as well to give proper credit**
 
@@ -25,10 +26,17 @@ License currently at: [Premake LICENSE](https://github.com/premake/premake-core/
 Press the Raw button and save the file as LICENSE.txt
 ![LICENSE Download](/assets/img/license.png)
 
-
-
 ## Setting up the project
-I have a specific way that I like to set up project, so I will explain using the file structure that I plan on using for this project, if you structure your projects differently no worries just slot things in where you need them and adjust file paths accordingly.
+
+### Git Repository
+
+I won't be going into a lot of detail for this, you really need some sort of revision control for a project like this, even if you're working on it solo, and my preference is Git (specifically through GitHub). If you want more info on setting that part up you can look here: [Create a GitHub Repo](https://docs.github.com/en/get-started/quickstart/create-a-repo){:target="_blank"}
+
+For the sake of these posts I will refer to my repository as **MyEngine**
+
+### Folder Structure
+
+I have a specific way that I like to set up projects, so I will explain using the file structure that I plan on using for this project, if you structure your projects differently no worries just slot things in where you need them and adjust file paths accordingly.
 
 Basic structure for the project:
 
@@ -91,9 +99,10 @@ A couple of things to note; Since this is written in **lua** you can declare var
 
 *Note:* I plan on using C++17 for the time being instead of C++20 mostly because there's nothing I particularly need from C++20, C++17 is already overkill for how I plan to write most of the systems. If at some point the benefits of switching become clear I will do so.
 
-By running: 
+By running premake.exe from your root directory: 
 ![Run Manual](/assets/img/run_premake_manual.png) 
-*or the path to whatever directory you have premake5.exe and whatever version of vs you're building for*
+
+*(or the path to whatever directory you have premake5.exe and whatever version of vs you're building for)*
 
 You should be able to see two new generated files, **Engine.sln** in the same directory as the script file, and **Engine/Engine.vcxproj**
 
