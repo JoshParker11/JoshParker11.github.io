@@ -1,0 +1,243 @@
+I"�^<p><em>Disclaimer: I’m intentionally trying to go with the first reasonable solution I think of to solve the current problem (with some thinking ahead and lessons learned from the past), so there’s a chance I’ll think of a better solution in the future and the code will be different.</em></p>
+
+<h2 id="key-thoughts">Key Thoughts</h2>
+
+<h2 id="problem-where-does-the-boundary-between-game-and-engine-begin">Problem: Where does the boundary between game and engine begin?</h2>
+
+<p>This is a fairly individual question to ask, and the answers can vary quite a bit. In most of my previous projects I never bothered to make any real distinction, the purposes of those engines were to make one specific game so a tight coupling between the two wasn’t a problem. However, for this project, while I do have a first game somewhat in mind, I plan on making many projects using this code base, so I want to go with an architecture that makes it reusable without being too tied up in endless abstraction.</p>
+
+<p>Another question to ask is, how much control/responsibility do you want to put on the user (game) side? Should the engine simply be a set of utilities and libraries, or should it manage some internal state and handle some heavy lifting?</p>
+
+<p>I’ve answered these questions for myself, and I’ll be discussing some potential architectures and why I chose what I chose.</p>
+
+<h2 id="engineh">Engine.h</h2>
+
+<p>As I’ve moved from project to project I find myself re-writing many of the same features. I do my best to take existing code when I can and slot it in, but it’s not always that easy. The first architecture I considered is a series of lightweight header only libraries, that either got compiled into a single include or linked via a single header that includes the rest of the libraries.</p>
+
+<h3 id="pros">Pros</h3>
+
+<ul>
+  <li>Simplicity! - The ability to drag and drop a single file into any project and instantly have access to useful helper functions and utilities is not nothing. If all the logic is contained in a single file you don’t have to worry about additional dependencies, everything “should” work right out of the box.</li>
+  <li>Reusability - The types of utilities I think of when thinking about this setup include things like <em>math.h</em> that would include tons of functions for 2D/3D vector math, matrix manipulation, quaternions, and so on. This file could be dropped into any project that required math operations even projects outside the games sphere.</li>
+</ul>
+
+<h3 id="cons">Cons</h3>
+
+<ul>
+  <li>The types of utilities you can provide with this method are realistically constrained to systems that don’t manage internal state. If you include a header file with the intention of calling a few helpful methods to make your life easier, in my mind, you don’t really expect to have to set up and tear down a bunch of additional structures. So every call to a function should be constrained to that function and any additional internal logic.</li>
+</ul>
+
+<h2 id="enginelib--enginedll">Engine.lib / Engine.dll</h2>
+
+<p>Range of possible implementations here, going from a similar structure as above with minimal helper libraries that are just linked in, up to something that holds all the state for the core systems of the engine. For the latter, the game only registers a few callbacks to the engine to interface, and all the state, initialization, and teardown is dealt with in the lib / dll.</p>
+
+<h3 id="pros-1">Pros</h3>
+
+<ul>
+  <li>Cleaner lines between game and engine. By splitting the code between two projects, if you maintain discipline, it’s easier to keep game code on the game side, and engine code on the engine side, without crossing boundaries for convenience.</li>
+  <li>Reusable code base. If you succeed at the first point, the engine lib will remain game agnostic and therefor can be linked into any potential game and have an immediate jumping off point for developing it.</li>
+</ul>
+
+<h3 id="cons-1">Cons</h3>
+
+<ul>
+  <li>Potentially stuck with a fixed interface. If you tend more towards the involved engine.lib, where state, startup, and shutdown types of things are handled engine side, you may be stuck with the interface that you provide in subsequent games, unless you’re willing to rewrite a decent chunk of core code. This isn’t as much of a concern for me because I expect to be the only real customer of my engine, so I’ll make it how I like, and if I really needed to change core code, I was the one who wrote it, so I could change it if I liked. Just something to keep in mind if you ever wanted to distribute your engine.</li>
+</ul>
+
+<h2 id="gameexe">Game.exe</h2>
+
+<p>The final setup I considered is how I’ve done basically every other project I’ve worked on, where the engine and <strong>a</strong> specific game are a single project, and the systems tend towards more highly coupled.</p>
+
+<h3 id="pros-2">Pros</h3>
+
+<ul>
+  <li>No wasted time with unnecessary abstractions. If you know the specific problem you’re trying to solve (ie. already have a game in mind) then you don’t need to concern yourself with making abstractions to allow for a variety of games, and you don’t need to build systems that your game doesn’t need.</li>
+</ul>
+
+<h3 id="cons-2">Cons</h3>
+
+<ul>
+  <li>As I mentioned above, with no clear boundary between engine and game, it’s easy to tightly couple your systems, potentially making them less flexible to changes in the design of your game, and certainly make it harder to strip out functionality if you wanted to reuse anything. With all the code in one project, it’s tempting to solve problems in a brittle way. For instance, if you have an issue with a system not having access to some piece of state that it needs, you could potentially just bake in a pointer to that state so it always has access. However, you’re now burdened with the responsibility to manage that pointer or hard reference, and make sure it’s up to date.</li>
+</ul>
+
+<h2 id="the-path-i-chose">The Path I Chose</h2>
+
+<p>For this project I fell somewhere towards the upper end of the Engine.lib variation. I want basically all the platform specific stuff to be dealt with by the engine as well as a good deal of setting up the environment and managing resources. I’m still debating over where the exact line between the two is drawn, if I want to just provide a couple callbacks for init, update, render, and a few others, or if I want the game to have full control over the loop and make it necessary for the game to update the engine systems when it feels like it. Currently, I lean towards the former given that the engine is primarily a tool for me to build with, so if I need finer control I can cross that bridge when I get there. However, there may be benefit in giving back a bit more control to the game if I was to ever publish the full project for anyone to use, or some hybrid opt-in approach. Who knows? We’ll get there when we get there, and it shouldn’t be too big a lift to move the main loop to the game side, so I’m not worried at the moment.</p>
+
+<h2 id="basic-application-interface-setup">Basic Application Interface Setup</h2>
+
+<p>We are going to be adding the skeleton to get the game project interacting with the engine. We will be adding 4 files to the engine, and 3 to the game project. Don’t worry they’re all small files.</p>
+
+<p>First, we’re going to add <em>Application.h</em> to the engine project. I usually don’t like being this generic with naming, this is a <strong>game</strong> engine after all, why not call it <em>Game.h</em>. My reasoning is I have a couple non-game projects I’d like to get to at some point and I might as well leverage the work I’m doing here to build them. They are not games, so I figured the generic <em>application</em> work better in this case.</p>
+
+<p><em>Application.h</em></p>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="cp">#pragma once
+</span>
+<span class="k">struct</span> <span class="nc">Game</span><span class="p">;</span>
+
+<span class="k">struct</span> <span class="nc">ApplicationConfig</span>
+<span class="p">{</span>
+  <span class="kt">short</span> <span class="n">m_StartPosX</span><span class="p">;</span>
+  <span class="kt">short</span> <span class="n">m_StartPosY</span><span class="p">;</span>
+  <span class="kt">short</span> <span class="n">m_StartWidth</span><span class="p">;</span>
+  <span class="kt">short</span> <span class="n">m_StartHeight</span><span class="p">;</span>
+  <span class="kt">char</span><span class="o">*</span> <span class="n">m_Name</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kt">bool</span> <span class="nf">Application_Create</span><span class="p">(</span> <span class="n">Game</span><span class="o">*</span> <span class="n">gameInst</span> <span class="p">);</span>
+<span class="kt">bool</span> <span class="nf">Application_Run</span><span class="p">();</span></code></pre></figure>
+
+<p>This is the interface I currently have in mind for creating an application, at the moment I’m just passing in a pointer to a Game instance, later, when I add other types of applications I will probably abstract that bit out, or just put it behind #define’s.</p>
+
+<p>ApplicationConfig is just some generic data about all applications, currently it’s just some window size info and the name of the application, but this could potentially expand later. We’ll come back to Application_Create and Application_Run in a bit, for now, let’s define the Game struct.</p>
+
+<p><em>ApplicationTypes.h</em></p>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="cp">#include "Application.h"
+</span>
+<span class="k">struct</span> <span class="nc">Game</span>
+<span class="p">{</span>
+  <span class="n">ApplicationConfig</span> <span class="n">m_AppConfig</span><span class="p">;</span>
+
+  <span class="kt">bool</span><span class="p">(</span> <span class="o">*</span><span class="n">Initialize</span> <span class="p">)(</span><span class="n">Game</span><span class="o">*</span> <span class="n">gameInst</span><span class="p">);</span>
+  <span class="kt">bool</span><span class="p">(</span> <span class="o">*</span><span class="n">Update</span> <span class="p">)(</span><span class="n">Game</span><span class="o">*</span> <span class="n">gameInst</span><span class="p">,</span> <span class="kt">float</span> <span class="n">dt</span><span class="p">);</span>
+  <span class="kt">bool</span><span class="p">(</span> <span class="o">*</span><span class="n">Render</span> <span class="p">)(</span><span class="n">Game</span><span class="o">*</span> <span class="n">gameInst</span><span class="p">,</span> <span class="kt">float</span> <span class="n">dt</span><span class="p">);</span>
+  <span class="kt">void</span><span class="p">(</span> <span class="o">*</span><span class="n">OnResize</span> <span class="p">)(</span><span class="n">Game</span><span class="o">*</span> <span class="n">gameInst</span><span class="p">,</span> <span class="kt">float</span> <span class="n">width</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="n">height</span><span class="p">);</span>
+
+  <span class="c1">// Game-specific game state, created and managed by the game</span>
+  <span class="kt">void</span><span class="o">*</span> <span class="n">m_State</span><span class="p">;</span>
+<span class="p">};</span></code></pre></figure>
+
+<p>Here is what I have set up for the Game struct, it consists of the config we defined in the previous file, callbacks for the important steps in the game loop (Initialize, Update, and Render), callbacks for other important events (the window being resized in this case), and a pointer to the internal state of the game. I’m not sure if I’ll keep this state here or not, it’s currently here for convenience. I’m also not sure if I’ll keep the event callbacks here, stuff like window resized events are important, but I might leave that entirely up to the game side to deal with once I have the event system in place.</p>
+
+<p>Now we can start getting into the actual engine/game connection code. The third file we’re going to add to the engine side is Entry.h, again I dislike generic names like entry point, but I’m truly terrible at naming anything really, so I’ll stick with the usual application naming.</p>
+
+<p><em>Entry.h</em></p>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="cp">#include "Application.h" // I know this is included in ApplicationTypes.h just being explicit
+#include "ApplicationTypes.h"
+</span>
+<span class="cp">#include &lt;iostream&gt; // TEMP
+</span>
+<span class="c1">// Defined by a specific game</span>
+<span class="k">extern</span> <span class="n">b8</span> <span class="nf">CreateGame</span><span class="p">(</span> <span class="n">Game</span><span class="o">*</span> <span class="n">outGame</span> <span class="p">);</span>
+
+<span class="c1">// Main entry-point into the application</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span>
+<span class="p">{</span>
+  <span class="c1">// Request the game instance from the application</span>
+  <span class="n">Game</span> <span class="n">gameInst</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="n">CreateGame</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">gameInst</span> <span class="p">)</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Could not create the game"</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+    <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="c1">// Validate the game instance was set up properly</span>
+  <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="n">gameInst</span><span class="p">.</span><span class="n">Initialize</span> <span class="o">||</span> <span class="o">!</span><span class="n">gameInst</span><span class="p">.</span><span class="n">Update</span> <span class="o">||</span> <span class="o">!</span><span class="n">gameInst</span><span class="p">.</span><span class="n">Render</span> <span class="o">||</span> <span class="o">!</span><span class="n">gameInst</span><span class="p">.</span><span class="n">OnResize</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"The games function pointers must be assigned!"</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+    <span class="k">return</span> <span class="o">-</span><span class="mi">2</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="c1">// Initilization</span>
+  <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="n">Application_Create</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">gameInst</span> <span class="p">)</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Application failed to create"</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="p">}</span>
+  
+  <span class="c1">// Begin Game Loop</span>
+  <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="n">Application_Run</span><span class="p">()</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Application did not shutdown properly"</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+    <span class="k">return</span> <span class="mi">2</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>The first line to note is the extern of the function CreateGame. Since the <strong>main</strong> function is defined on the library side, the actual game project will not have a main function and instead will implement this extern CreateGame function as the entry point into the application.</p>
+
+<p>Assuming the game has implemented CreateGame, the program will start executing in main. A Game struct will be filled out by the game, we’ll validate that all the callbacks are set, then we will call the engine side Application_Create that we defined in Application.h. Assuming that was successful, we will jump into the engine side Application_Run.</p>
+
+<p>We’ll finish up the engine side by looking at how Application_Create and Application_Run are implemented in Application.cpp before jumping over to the game code to see how we implement CreateGame.</p>
+
+<p><em>Application.cpp</em></p>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="cp">#include "Application.h"
+#include "ApplicationTypes.h"
+</span>
+<span class="k">struct</span> <span class="nc">ApplicationState</span>
+<span class="p">{</span>
+  <span class="n">Game</span><span class="o">*</span> <span class="n">gameInstance</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">m_IsRunning</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">m_IsSuspended</span><span class="p">;</span>
+  <span class="n">PlatformState</span> <span class="n">m_Platform</span><span class="p">;</span>
+  <span class="kt">short</span> <span class="n">m_Width</span><span class="p">;</span>
+  <span class="kt">short</span> <span class="n">m_Height</span><span class="p">;</span>
+  <span class="kt">double</span> <span class="n">m_LastFrameTime</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">static</span> <span class="kt">bool</span> <span class="n">g_Initialized</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+<span class="k">static</span> <span class="n">ApplicationState</span> <span class="n">g_AppState</span><span class="p">;</span>
+
+<span class="kt">bool</span> <span class="nf">Application_Create</span><span class="p">(</span> <span class="n">Game</span><span class="o">*</span> <span class="n">gameInst</span> <span class="p">)</span>
+<span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span> <span class="n">g_Initialized</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">g_AppState</span><span class="p">.</span><span class="n">gameInstance</span> <span class="o">=</span> <span class="n">gameInst</span><span class="p">;</span>
+
+  <span class="n">g_AppState</span><span class="p">.</span><span class="n">m_IsRunning</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="n">g_AppState</span><span class="p">.</span><span class="n">m_IsSuspended</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+
+  <span class="c1">// COMING SOON: Platform layer startup</span>
+  
+  <span class="c1">// Run the clients initialization steps</span>
+  <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="n">g_AppState</span><span class="p">.</span><span class="n">gameInstance</span><span class="o">-&gt;</span><span class="n">Initialize</span><span class="p">(</span> <span class="n">g_AppState</span><span class="p">.</span><span class="n">gameInstance</span> <span class="p">)</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">g_Initialized</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+
+  <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">bool</span> <span class="nf">Application_Run</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="k">while</span> <span class="p">(</span> <span class="n">g_AppState</span><span class="p">.</span><span class="n">m_IsRunning</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="n">g_AppState</span><span class="p">.</span><span class="n">m_IsSuspended</span> <span class="p">)</span>
+    <span class="p">{</span>
+      <span class="c1">// Call the games update routine</span>
+      <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="n">g_AppState</span><span class="p">.</span><span class="n">gameInstance</span><span class="o">-&gt;</span><span class="n">Update</span><span class="p">(</span> <span class="n">g_AppState</span><span class="p">.</span><span class="n">gameInstance</span><span class="p">,</span> <span class="p">(</span><span class="kt">float</span><span class="p">)</span><span class="mi">0</span> <span class="p">)</span> <span class="p">)</span>
+      <span class="p">{</span>
+        <span class="n">g_AppState</span><span class="p">.</span><span class="n">m_IsRunning</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+        <span class="k">break</span><span class="p">;</span>
+      <span class="p">}</span>
+
+      <span class="c1">// Call the games render routine</span>
+      <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="n">g_AppState</span><span class="p">.</span><span class="n">gameInstance</span><span class="o">-&gt;</span><span class="n">Render</span><span class="p">(</span> <span class="n">g_AppState</span><span class="p">.</span><span class="n">gameInstance</span><span class="p">,</span> <span class="p">(</span><span class="kt">float</span><span class="p">)</span><span class="mi">0</span> <span class="p">)</span> <span class="p">)</span>
+      <span class="p">{</span>
+        <span class="n">g_AppState</span><span class="p">.</span><span class="n">m_IsRunning</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+        <span class="k">break</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="n">g_AppState</span><span class="p">.</span><span class="n">m_IsRunning</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+  <span class="c1">// COMING SOON: Platform shutdown</span>
+  <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>This is the meat and potatoes of the engine/game loop, almost any system that the engine starts up will be done here. We also manage calling the game initialize, update, and render functions. A couple things to note, you’ll see me use a similar pattern in most of the systems I write, were I’ll create a struct with the state for the system and a static instance of that state that is managed by the system as well as any other static bits of state (if the system is initialized in this case)</p>
+
+<h2 id="whats-next">What’s next?</h2>
+
+<p><em>Teaser of our first system: Logging!</em></p>
+:ET
