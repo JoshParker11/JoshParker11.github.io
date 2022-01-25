@@ -1,0 +1,22 @@
+I"(	<h2 id="intro">Intro</h2>
+
+<p>Hello again! I’m taking a brief detour from my originally planned sequence because I felt like talking about containers today, and the first one that’s important for the engine is a dynamic array. In general, I try to use static arrays whenever possible, but for convenience and learning I wanted to add a dynamic array implementation.</p>
+
+<p><em>Note: This is just one implementation, it is by no means the best way to do it, this is just what works for me.</em></p>
+
+<p>You might be wondering why I would bother writing a container from scratch when things like std::vector exist. There are two main reasons, one, I want to learn as much as possible so reinventing/reimplementing the wheel is the name of the game. Two, I want as few external dependencies as reasonably possible, and as much control over how my code interacts with the metal as I can. The dependencies I’m trying to avoid include the STL.</p>
+
+<h2 id="partial-interface">Partial Interface</h2>
+
+<p>There</p>
+
+<p><em>Darray.h</em></p>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="cp">#define DARRAY_DEFAULT_CAPACITY 1
+</span>
+<span class="kt">void</span><span class="o">*</span> <span class="nf">_Darray_Create</span><span class="p">(</span> <span class="n">u64</span> <span class="n">stride</span><span class="p">,</span> <span class="n">u64</span> <span class="n">initCapacity</span> <span class="o">=</span> <span class="n">DARRAY_DEFAULT_CAPACITY</span> <span class="p">);</span>
+<span class="kt">void</span> <span class="nf">_Darray_Destroy</span><span class="p">(</span> <span class="kt">void</span><span class="o">*</span> <span class="n">darray</span> <span class="p">);</span>
+
+<span class="kt">void</span><span class="o">*</span> <span class="nf">_Darray_PushBack</span><span class="p">(</span> <span class="kt">void</span><span class="o">*</span> <span class="n">darray</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">value</span> <span class="p">);</span>
+<span class="kt">void</span><span class="o">*</span> <span class="nf">_Darray_Resize</span><span class="p">(</span> <span class="kt">void</span><span class="o">*</span> <span class="n">darray</span> <span class="p">);</span></code></pre></figure>
+:ET

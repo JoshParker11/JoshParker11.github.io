@@ -1,0 +1,188 @@
+I"�N<h2 id="intro">Intro</h2>
+
+<p>Hello again! I’m taking a brief detour from my originally planned sequence because I felt like talking about containers today, and the first one that’s important for the engine is a dynamic array. In general, I try to use static arrays whenever possible, but for convenience and learning I wanted to add a dynamic array implementation.</p>
+
+<p><em>Note: This is just one implementation, it is by no means the best way to do it, this is just what works for me.</em></p>
+
+<p>You might be wondering why I would bother writing a container from scratch when things like std::vector exist. There are two main reasons, one, I want to learn as much as possible so reinventing/reimplementing the wheel is the name of the game. Two, I want as few external dependencies as reasonably possible, and as much control over how my code interacts with the metal as I can. The dependencies I’m trying to avoid include the STL.</p>
+
+<h2 id="partial-interface">Partial Interface</h2>
+<p><em>Types.h</em></p>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="c1">// Unsigned int types</span>
+<span class="k">typedef</span> <span class="kt">unsigned</span> <span class="kt">char</span>  <span class="n">u8</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">unsigned</span> <span class="kt">short</span> <span class="n">u16</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">unsigned</span> <span class="n">u32</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">unsigned</span> <span class="kt">long</span> <span class="kt">long</span> <span class="n">u64</span><span class="p">;</span>
+
+<span class="c1">// Signed int types</span>
+<span class="k">typedef</span> <span class="kt">char</span> <span class="n">i8</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">short</span> <span class="n">i16</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">int</span> <span class="n">i32</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">long</span> <span class="kt">long</span> <span class="n">i64</span><span class="p">;</span>
+
+<span class="c1">// Floating point types</span>
+<span class="k">typedef</span> <span class="kt">float</span> <span class="n">f32</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">double</span> <span class="n">f64</span><span class="p">;</span>
+
+<span class="c1">// Boolean types</span>
+<span class="k">typedef</span> <span class="kt">char</span> <span class="n">b8</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">int</span> <span class="n">b32</span><span class="p">;</span></code></pre></figure>
+
+<p><em>DArray.h</em></p>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="cp">#define DARRAY_DEFAULT_CAPACITY 1
+</span>
+<span class="kt">void</span><span class="o">*</span> <span class="nf">_Darray_Create</span><span class="p">(</span> <span class="n">u64</span> <span class="n">stride</span><span class="p">,</span> <span class="n">u64</span> <span class="n">initCapacity</span> <span class="p">);</span>
+<span class="kt">void</span> <span class="nf">_Darray_Destroy</span><span class="p">(</span> <span class="kt">void</span><span class="o">*</span> <span class="n">darray</span> <span class="p">);</span>
+
+<span class="kt">void</span><span class="o">*</span> <span class="nf">_Darray_PushBack</span><span class="p">(</span> <span class="kt">void</span><span class="o">*</span> <span class="n">darray</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">value</span> <span class="p">);</span>
+<span class="kt">void</span><span class="o">*</span> <span class="nf">_Darray_Resize</span><span class="p">(</span> <span class="kt">void</span><span class="o">*</span> <span class="n">darray</span> <span class="p">);</span>
+
+<span class="cp">#define Darray_Create(type) _Darray_Create(sizeof(type), DARRAY_DEFAULT_CAPACITY)
+</span>
+<span class="cp">#define Darray_Reserve(type, capacity) _Darray_Create(sizeof(type), capacity)
+</span>
+<span class="cp">#define Darray_Destroy(darray) _Darray_Destroy(darray)
+</span>
+<span class="cp">#define Darray_PushBack(darray, value)                    \
+  {                                                    \
+    decltype(value) temp = value;                       \
+    darray = (decltype(darray))_Darray_PushBack(darray, &amp;temp); \
+  }   </span></code></pre></figure>
+
+<p>I’m going to talk through the most basic functionality that I need out of a dynamic array in this section. Later, as needs arise I will add further utilities and features.</p>
+
+<p><em>Note: I will probably ditch using decltype at some point, also I’m using the convention of putting an underscore before internal functions, the actual interface functions are the macros.</em></p>
+
+<p>The bare minimum I need to be able to do is create/destroy the dynamic array (with or without a starting capacity), push_back a value, and resize the buffer when it gets too small.</p>
+
+<h2 id="implementation">Implementation</h2>
+
+<p><em>DArray.cpp</em></p>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="k">struct</span> <span class="nc">DarrayHeader</span>
+<span class="p">{</span>
+  <span class="n">u64</span> <span class="n">m_Capacity</span><span class="p">;</span>
+  <span class="n">u64</span> <span class="n">m_Length</span><span class="p">;</span>
+  <span class="n">u64</span> <span class="n">m_Stride</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">struct</span> <span class="nc">DarrayStats</span>
+<span class="p">{</span>
+  <span class="n">u64</span> <span class="n">m_Allocations</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="n">DarrayStats</span> <span class="n">g_Stats</span><span class="p">;</span></code></pre></figure>
+
+<h3 id="memory-layout">Memory Layout</h3>
+
+<p><img src="/assets/img/darray_mem_layout.png" alt="Mem Layout" /></p>
+
+<p>The additional overhead from a plain c-style array is minimal, there is an additional 24 bytes that are just before the internal buffer in memory. The pointer to the internal buffer is what is passed back to the user and what they interact with. There are three fields in the header, m_Stride is the size of each element in the array, m_Length is the number of elements currently in the array, and m_Capacity is the total number of <strong>allocated</strong> bytes / m_Stride.</p>
+
+<h3 id="create">Create</h3>
+
+<p><em>DArray.cpp</em></p>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="n">DarrayHeader</span><span class="o">*</span> <span class="nf">_Darray_GetHeader</span><span class="p">(</span> <span class="kt">void</span><span class="o">*</span> <span class="n">darray</span> <span class="p">)</span>
+<span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span><span class="n">DarrayHeader</span><span class="o">*</span><span class="p">)((</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">darray</span> <span class="o">-</span> <span class="k">sizeof</span><span class="p">(</span> <span class="n">DarrayHeader</span> <span class="p">));</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="o">*</span> <span class="nf">_Darray_Create</span><span class="p">(</span> <span class="n">u64</span> <span class="n">stride</span><span class="p">,</span> <span class="n">u64</span> <span class="n">initCapacity</span> <span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">u64</span> <span class="n">dataSize</span> <span class="o">=</span> <span class="n">initCapacity</span> <span class="o">*</span> <span class="n">stride</span><span class="p">;</span>
+  <span class="n">u64</span> <span class="n">headerSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span> <span class="n">DarrayHeader</span> <span class="p">);</span>
+
+  <span class="kt">void</span><span class="o">*</span> <span class="n">arr</span> <span class="o">=</span> <span class="n">Memory_Allocate</span><span class="p">(</span> <span class="n">headerSize</span> <span class="o">+</span> <span class="n">dataSize</span><span class="p">,</span> <span class="n">MEMORY_TAG_DYNARRAY</span> <span class="p">);</span>
+  <span class="n">Memory_ZeroMemory</span><span class="p">(</span> <span class="n">arr</span><span class="p">,</span> <span class="n">headerSize</span> <span class="o">+</span> <span class="n">dataSize</span> <span class="p">);</span>
+  <span class="n">DarrayHeader</span><span class="o">*</span> <span class="n">header</span> <span class="o">=</span> <span class="p">(</span><span class="n">DarrayHeader</span><span class="o">*</span><span class="p">)</span><span class="n">arr</span><span class="p">;</span>
+  <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Capacity</span> <span class="o">=</span> <span class="n">initCapacity</span><span class="p">;</span>
+  <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Length</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Stride</span> <span class="o">=</span> <span class="n">stride</span><span class="p">;</span>
+
+<span class="cp">#if USING(DARRAY_DEBUG_STATS)
+</span>  <span class="o">++</span><span class="n">g_Stats</span><span class="p">.</span><span class="n">m_Allocations</span><span class="p">;</span>
+<span class="cp">#endif
+</span>
+  <span class="k">return</span> <span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">arr</span> <span class="o">+</span> <span class="n">headerSize</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>We haven’t covered the memory system yet, or the platform layer, but without going into too much depth, for windows Memory_Allocate and Memory_ZeroMemory are basically just wrappers for malloc and memset with 0’s.</p>
+
+<p>Here we need to calculate how much memory we need to allocate. We have the actual buffer which is the size of each element (or stride) x the initial capacity of the array (1 if user doesn’t call reserve with a specific amount). We then add the additional size of the header and allocate a chunk of that size. In the future there will be specific memory pre-allocated by a memory manager that will allow for this to not cause an OS level allocation which we want to avoid as much as possible.</p>
+
+<p>We then zero that memory to for good measure, fill out the header info and return the user the pointer to the actual data buffer. The only additional bit I have in here is the start of some debug tracking code that will get stripped out of distribution builds.</p>
+
+<h3 id="destroy">Destroy</h3>
+<p><em>DArray.cpp</em></p>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="kt">void</span> <span class="nf">_Darray_Destroy</span><span class="p">(</span> <span class="kt">void</span><span class="o">*</span> <span class="n">darray</span> <span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">DarrayHeader</span><span class="o">*</span> <span class="n">header</span> <span class="o">=</span> <span class="n">_Darray_GetHeader</span><span class="p">(</span> <span class="n">darray</span> <span class="p">);</span>
+  <span class="n">Memory_Free</span><span class="p">(</span> <span class="n">header</span><span class="p">,</span> <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Capacity</span> <span class="o">*</span> <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Stride</span> <span class="o">+</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">DarrayHeader</span><span class="p">),</span> <span class="n">MEMORY_TAG_DYNARRAY</span> <span class="p">);</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>Nothing fancy here, calculating the size of the buffer to free and freeing it. I should probably save the sizeof(DarrayHeader) somewhere so I can stop recalculating it. Also, it may be worthwhile to add some debug validation checks to detect double free’s or bad pointers at some point.</p>
+
+<h3 id="push-back">Push Back</h3>
+
+<p><em>DArray.cpp</em></p>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="kt">void</span><span class="o">*</span> <span class="nf">_Darray_PushBack</span><span class="p">(</span> <span class="kt">void</span><span class="o">*</span> <span class="n">darray</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">value</span> <span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">DarrayHeader</span><span class="o">*</span> <span class="n">header</span> <span class="o">=</span> <span class="n">_Darray_GetHeader</span><span class="p">(</span> <span class="n">darray</span> <span class="p">);</span>
+  <span class="c1">// resize if at capacity</span>
+  <span class="k">if</span> <span class="p">(</span> <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Length</span> <span class="o">==</span> <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Capacity</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="n">darray</span> <span class="o">=</span> <span class="n">_Darray_Resize</span><span class="p">(</span> <span class="n">darray</span> <span class="p">);</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="n">_Darray_GetHeader</span><span class="p">(</span> <span class="n">darray</span> <span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="c1">// insert value</span>
+  <span class="n">u64</span> <span class="n">insertOffset</span> <span class="o">=</span> <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Length</span> <span class="o">*</span> <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Stride</span><span class="p">;</span>
+  <span class="kt">char</span><span class="o">*</span> <span class="n">insertPosition</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">darray</span> <span class="o">+</span> <span class="n">insertOffset</span><span class="p">;</span>
+  <span class="n">Memory_CopyMemory</span><span class="p">(</span> <span class="n">insertPosition</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Stride</span> <span class="p">);</span>
+  <span class="o">++</span><span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Length</span><span class="p">;</span>
+
+  <span class="c1">// return new or existing array</span>
+  <span class="k">return</span> <span class="n">darray</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>Fairly straight forward here as well, we do an initial check to see if we are at capacity, if we are, we will resize the buffer and update the pointer, otherwise, we calculate the position to insert at and memcpy the new value into it and update the length.</p>
+
+<h3 id="resize">Resize</h3>
+
+<p><em>DArray.cpp</em></p>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="cp">#define DARRAY_GROWTH_RATE 2
+</span>
+<span class="kt">void</span><span class="o">*</span> <span class="nf">_Darray_Resize</span><span class="p">(</span> <span class="kt">void</span><span class="o">*</span> <span class="n">darray</span> <span class="p">)</span>
+<span class="p">{</span>
+<span class="n">DarrayHeader</span><span class="o">*</span> <span class="n">header</span> <span class="o">=</span> <span class="n">_Darray_GetHeader</span><span class="p">(</span> <span class="n">darray</span> <span class="p">);</span>
+  <span class="n">u64</span> <span class="n">curLength</span> <span class="o">=</span> <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Length</span><span class="p">;</span>
+  <span class="n">u64</span> <span class="n">curBufferSize</span> <span class="o">=</span> <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Capacity</span> <span class="o">*</span> <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Stride</span> <span class="o">+</span> <span class="k">sizeof</span><span class="p">(</span> <span class="n">DarrayHeader</span> <span class="p">);</span>
+
+  <span class="kt">void</span><span class="o">*</span> <span class="n">newDarray</span> <span class="o">=</span> <span class="n">_Darray_Create</span><span class="p">(</span> <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Stride</span><span class="p">,</span> <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Capacity</span> <span class="o">*</span> <span class="n">DARRAY_GROWTH_RATE</span> <span class="p">);</span>
+  <span class="n">Memory_CopyMemory</span><span class="p">(</span> <span class="n">newDarray</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="n">curBufferSize</span> <span class="p">);</span>
+  <span class="n">DarrayHeader</span><span class="o">*</span> <span class="n">newHeader</span> <span class="o">=</span> <span class="n">_Darray_GetHeader</span><span class="p">(</span> <span class="n">newDarray</span> <span class="p">);</span>
+  <span class="n">newHeader</span><span class="o">-&gt;</span><span class="n">m_Capacity</span> <span class="o">=</span> <span class="n">header</span><span class="o">-&gt;</span><span class="n">m_Capacity</span> <span class="o">*</span> <span class="n">DARRAY_GROWTH_RATE</span><span class="p">;</span>
+  <span class="n">Memory_Free</span><span class="p">(</span> <span class="n">header</span><span class="p">,</span> <span class="n">curBufferSize</span><span class="p">,</span> <span class="n">MEMORY_TAG_DYNARRAY</span> <span class="p">);</span>
+
+  <span class="k">return</span> <span class="n">newDarray</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>Resize is called when we have reached the capacity of a buffer and need to expand it. We create a new array with capacity = the current capacity x the growth rate for arrays (2 at the moment). We memcpy the old data into the new array and update the capacity, then free the old memory, and return the new array.</p>
+
+<h2 id="use-case">Use Case</h2>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="n">u64</span><span class="o">*</span> <span class="n">buffer</span><span class="p">;</span>
+<span class="n">buffer</span> <span class="o">=</span> <span class="p">(</span><span class="n">u64</span><span class="o">*</span><span class="p">)</span><span class="n">Darray_Create</span><span class="p">(</span> <span class="n">u64</span> <span class="p">);</span>
+<span class="k">for</span> <span class="p">(</span> <span class="n">u32</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span> <span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">Darray_PushBack</span><span class="p">(</span> <span class="n">buffer</span><span class="p">,</span> <span class="n">i</span> <span class="p">);</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>Here’s a quick example using the functionality we got to today. We create a buffer of u64’s then PushBack the numbers 0-99, causing 7 resizes to occur.</p>
+:ET

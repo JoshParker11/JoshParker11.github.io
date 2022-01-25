@@ -1,0 +1,7 @@
+I"�<h2 id="intro">Intro</h2>
+
+<p>Hello again! I’m taking a brief detour from my originally planned sequence because I felt like talking about containers today, and the first one that’s important for the engine is a dynamic array. In general, I try to use static arrays whenever possible, but for convenience and learning I wanted to add a dynamic array implementation.</p>
+
+<p><em>Note: This is just one implementation, it is by no means the best way to do it, this is just what works for me.</em></p>
+
+:ET

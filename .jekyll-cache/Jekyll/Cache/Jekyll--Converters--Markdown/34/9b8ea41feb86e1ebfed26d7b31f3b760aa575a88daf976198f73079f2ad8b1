@@ -1,0 +1,57 @@
+I"�<h2 id="intro">Intro</h2>
+
+<p>Hello again! I’m taking a brief detour from my originally planned sequence because I felt like talking about containers today, and the first one that’s important for the engine is a dynamic array. In general, I try to use static arrays whenever possible, but for convenience and learning I wanted to add a dynamic array implementation.</p>
+
+<p><em>Note: This is just one implementation, it is by no means the best way to do it, this is just what works for me.</em></p>
+
+<p>You might be wondering why I would bother writing a container from scratch when things like std::vector exist. There are two main reasons, one, I want to learn as much as possible so reinventing/reimplementing the wheel is the name of the game. Two, I want as few external dependencies as reasonably possible, and as much control over how my code interacts with the metal as I can. The dependencies I’m trying to avoid include the STL.</p>
+
+<h2 id="partial-interface">Partial Interface</h2>
+<p><em>Types.h</em></p>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="c1">// Unsigned int types</span>
+<span class="k">typedef</span> <span class="kt">unsigned</span> <span class="kt">char</span>  <span class="n">u8</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">unsigned</span> <span class="kt">short</span> <span class="n">u16</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">unsigned</span> <span class="n">u32</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">unsigned</span> <span class="kt">long</span> <span class="kt">long</span> <span class="n">u64</span><span class="p">;</span>
+
+<span class="c1">// Signed int types</span>
+<span class="k">typedef</span> <span class="kt">char</span> <span class="n">i8</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">short</span> <span class="n">i16</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">int</span> <span class="n">i32</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">long</span> <span class="kt">long</span> <span class="n">i64</span><span class="p">;</span>
+
+<span class="c1">// Floating point types</span>
+<span class="k">typedef</span> <span class="kt">float</span> <span class="n">f32</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">double</span> <span class="n">f64</span><span class="p">;</span>
+
+<span class="c1">// Boolean types</span>
+<span class="k">typedef</span> <span class="kt">char</span> <span class="n">b8</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="kt">int</span> <span class="n">b32</span><span class="p">;</span></code></pre></figure>
+
+<p><em>Darray.h</em></p>
+
+<figure class="highlight"><pre><code class="language-c--" data-lang="c++"><span class="cp">#define DARRAY_DEFAULT_CAPACITY 1
+</span>
+<span class="kt">void</span><span class="o">*</span> <span class="nf">_Darray_Create</span><span class="p">(</span> <span class="n">u64</span> <span class="n">stride</span><span class="p">,</span> <span class="n">u64</span> <span class="n">initCapacity</span> <span class="p">);</span>
+<span class="kt">void</span> <span class="nf">_Darray_Destroy</span><span class="p">(</span> <span class="kt">void</span><span class="o">*</span> <span class="n">darray</span> <span class="p">);</span>
+
+<span class="kt">void</span><span class="o">*</span> <span class="nf">_Darray_PushBack</span><span class="p">(</span> <span class="kt">void</span><span class="o">*</span> <span class="n">darray</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">value</span> <span class="p">);</span>
+<span class="kt">void</span><span class="o">*</span> <span class="nf">_Darray_Resize</span><span class="p">(</span> <span class="kt">void</span><span class="o">*</span> <span class="n">darray</span> <span class="p">);</span>
+
+<span class="cp">#define Darray_Create(type) _Darray_Create(sizeof(type), DARRAY_DEFAULT_CAPACITY)
+</span>
+<span class="cp">#define Darray_Reserve(type, capacity) _Darray_Create(sizeof(type), capacity)
+</span>
+<span class="cp">#define Darray_Destroy(darray) _Darray_Destroy(darray)
+</span>
+<span class="cp">#define Darray_PushBack(darray, value)                    \
+  {                                                    \
+    decltype(value) temp = value;                       \
+    darray = (decltype(darray))_Darray_PushBack(darray, &amp;temp); \
+  }   </span></code></pre></figure>
+
+<p>I’m going to talk through the most basic functionality that I need out of a dynamic array in this section. Later, as needs arise I will add further utilities and features.</p>
+
+<p><em>Note: I will probably ditch using decltype at some point, also I’m using the convention of putting an underscore before internal functions, the actual interface functions are the macros.</em></p>
+:ET
