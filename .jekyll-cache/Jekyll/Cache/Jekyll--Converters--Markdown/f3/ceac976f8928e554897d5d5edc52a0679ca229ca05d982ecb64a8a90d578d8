@@ -1,0 +1,13 @@
+I"S<h2 id="intro">Intro</h2>
+
+<p>There have been many times since I started my programming journey where it’s been made obvious to me how significant the hardware is to the programs we write. Being that all code is essentially a sequence of data transformations, the most important part of writing something that runs efficiently is having an understanding of what that data is, and precisely what we want to do with it. To figure out the best way to transform the data, one would imagine that knowing what is physically possible on a given piece of hardware would be a useful bit of information.</p>
+
+<p>I have a general sense of things that helpful and harmful to this endeavor, but I’m nowhere near the level I’d like to be at. I stumbled upon an amazing <a href="https://www.nand2tetris.org/">website</a>/course called nand2tetris that starts from simple NAND gates and builds up chip by chip to a working simulated computer. This and a few other resources will comprise the bulk of the info I plan on consuming in this space. I will be working on this in parallel to the game engine series where I will be thinking about Intel’s architecture specifically, and will apply what I’m learning building my own architecture to problems I face there.</p>
+
+<p>The motivation for building my own architecture from primitive blocks is to help build intuition for hardware architecture in a general, and really understand the consequences of each instruction I generate from code. Part of building intuition for a subject for me is teaching. Trying to go through the process of teaching someone else what I’m learning forces me to understand it at a deeper level, deep enough to explain WHY something is the way it is not just that it IS.</p>
+
+<p>Hopefully documenting this process will be useful to someone some day, I don’t claim to be any sort of expert in this stuff, my goal is that the documenting the steps I take to get the understanding I’m after will help someone if they’re going down the same path.</p>
+
+<h2 id="the-only-actual-hardware-well-talk-about">The Only “Actual” Hardware We’ll talk about</h2>
+
+:ET

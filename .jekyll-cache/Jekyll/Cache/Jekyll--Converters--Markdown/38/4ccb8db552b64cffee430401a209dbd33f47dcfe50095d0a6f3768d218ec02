@@ -1,0 +1,58 @@
+I"�<h2 id="intro">Intro</h2>
+
+<p>There have been many times since I started my programming journey where it’s been made obvious to me how significant the hardware is to the programs we write. Being that all code is essentially a sequence of data transformations, the most important part of writing something that runs efficiently is having an understanding of what that data is, and precisely what we want to do with it. To figure out the best way to transform the data, one would imagine that knowing what is physically possible on a given piece of hardware would be a useful bit of information.</p>
+
+<p>I have a general sense of things that helpful and harmful to this endeavor, but I’m nowhere near the level I’d like to be at. I stumbled upon an amazing <a href="https://www.nand2tetris.org/">website</a>/course called nand2tetris that starts from simple NAND gates and builds up chip by chip to a working simulated computer. This and a few other resources will comprise the bulk of the info I plan on consuming in this space. I will be working on this in parallel to the game engine series where I will be thinking about Intel’s architecture specifically, and will apply what I’m learning building my own architecture to problems I face there.</p>
+
+<p>The motivation for building my own architecture from primitive blocks is to help build intuition for hardware architecture in a general, and really understand the consequences of each instruction I generate from code. Part of building intuition for a subject for me is teaching. Trying to go through the process of teaching someone else what I’m learning forces me to understand it at a deeper level, deep enough to explain WHY something is the way it is not just that it IS.</p>
+
+<p>Hopefully documenting this process will be useful to someone some day, I don’t claim to be any sort of expert in this stuff, my goal is that the documenting the steps I take to get the understanding I’m after will help someone if they’re going down the same path.</p>
+
+<h2 id="the-only-actual-hardware-well-talk-about">The Only “Actual” Hardware We’ll talk about</h2>
+
+<p>Despite the entire point of this activity being to understand how the hardware works, I don’t actually want to be working with hardware or worrying about things in the domain of electrical engineering. I want to understand a small set of basic concepts that can get me to the NAND gate, and from there I will be doing everything in hardware simulations, and conceptual diagrams. I’ve tried implementing some of this stuff on breadboards and it gets out hand VERY quickly.</p>
+
+<h3 id="voltage">Voltage</h3>
+
+<p><strong>Motivation:</strong> At it’s lowest level, the data in computer systems is expressed with a series of 1’s and 0’s, but that’s still essentially a software level concept. Computers don’t move around slips of paper with 1’s and 0’s written on them. So what is going on in the real world that we call 0 or 1?</p>
+
+<p>Computers are electrical machines, so the fundamental unit is electricity, and we can make things happen by manipulating the flow of the current. So when we talk about binary (0 and 1), the physical correlation is a <strong>low voltage = 0</strong> and a <strong>high voltage = 1</strong>. Someone could give you a more formal definition of voltage, but for what I care about I just think about it as how much “juice” or “power” is coming across a wire.</p>
+
+<p><em>Little to no current flowing means the lightbulb won’t turn on (0)</em></p>
+
+<p><img src="/assets/img/low_voltage.png" alt="Low Voltage" /></p>
+
+<p><em>Enough current flowing and the lightbulb will turn on (1)</em></p>
+
+<p><img src="/assets/img/high_voltage.png" alt="High Voltage" /></p>
+
+<p>Something to note is that 0 and 1 don’t map directly to 0 volts and 1 volt, there is threshold where any voltage below a particular amount is “low” and any voltage above another amount is “high”. I don’t think this is ubiquitous across platforms but a recurring set of values I saw were anything under 0.7-0.8 volts is considered “low” and anything above ~2 volts is “high”.</p>
+
+<p>The logic we want to eventually get to is <strong>bolean</strong> logic, where we are doing operations on a space of 2 values. There are many ways to refer to these values, and they get used interchangeably to some extent.</p>
+<ul>
+  <li>High / Low</li>
+  <li>True / False</li>
+  <li>Yes / No</li>
+  <li>On / Off</li>
+  <li>1 / 0</li>
+  <li>…</li>
+</ul>
+
+<h3 id="transistors">Transistors</h3>
+<hr />
+<p>Thinking in terms of direction the electrons are flowing
+—</p>
+
+<p>The transistor is the next thing I want to discuss. We know that we’re working with an electrical system, and that we need to control the current in our system to get variations in voltage, but how do we do that</p>
+
+<h3 id="hardware-nand">Hardware NAND</h3>
+
+<p>what the heck is NAND</p>
+
+<p>truth table for NAND</p>
+
+<p>hardware layout</p>
+
+<h2 id="where-to-now">Where to now?</h2>
+
+:ET
